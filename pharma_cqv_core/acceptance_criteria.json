@@ -1,0 +1,175 @@
+{
+  "schema_version": "1.2.0",
+  "criteria_version": "2026.11-v1.2-DRAFT",
+  "effective_date": "2026-11-16",
+  "author": "Rohit Kumar, PMP, CEng (India), CEA, FSEr (T\u00dcV)",
+  "independent_reviewer": "PENDING_QA_CQV_PEER_REVIEW",
+  "guard_band_policy": {
+    "rule_type": "simple_acceptance",
+    "rounding_decimals": 6,
+    "default_percent_basis": "reading",
+    "missing_uncertainty_below_limit": "INDETERMINATE",
+    "verdict_combiner": "Any FAIL -> FAIL; else any INDETERMINATE -> INDETERMINATE; else PASS (NOT_APPLICABLE ignored)"
+  },
+  "calibration_policy": {
+    "expired_urs_id": "URS-CAL-001",
+    "missing_date_urs_id": "URS-CAL-002",
+    "missing_uncertainty_urs_id": "URS-CAL-003",
+    "unlinked_reading_urs_id": "URS-CAL-004",
+    "source_type": "ALCOA_PLUS"
+  },
+  "iso_14644_1_2015_table_a1": {
+    "urs_id": "URS-PART-001",
+    "source": "ISO 14644-1:2015 Annex A, Table A.1",
+    "source_type": "REGULATORY_REFERENCED_ISO",
+    "limit_direction": "lower",
+    "area_to_min_locations": [
+      {
+        "max_area_m2": 2,
+        "min_locations": 1
+      },
+      {
+        "max_area_m2": 4,
+        "min_locations": 2
+      },
+      {
+        "max_area_m2": 6,
+        "min_locations": 3
+      },
+      {
+        "max_area_m2": 8,
+        "min_locations": 4
+      },
+      {
+        "max_area_m2": 10,
+        "min_locations": 5
+      },
+      {
+        "max_area_m2": 24,
+        "min_locations": 6
+      },
+      {
+        "max_area_m2": 28,
+        "min_locations": 7
+      },
+      {
+        "max_area_m2": 32,
+        "min_locations": 8
+      },
+      {
+        "max_area_m2": 36,
+        "min_locations": 9
+      },
+      {
+        "max_area_m2": 52,
+        "min_locations": 10
+      },
+      {
+        "max_area_m2": 56,
+        "min_locations": 11
+      },
+      {
+        "max_area_m2": 64,
+        "min_locations": 12
+      },
+      {
+        "max_area_m2": 68,
+        "min_locations": 13
+      },
+      {
+        "max_area_m2": 72,
+        "min_locations": 14
+      },
+      {
+        "max_area_m2": 76,
+        "min_locations": 15
+      },
+      {
+        "max_area_m2": 104,
+        "min_locations": 16
+      },
+      {
+        "max_area_m2": 108,
+        "min_locations": 17
+      },
+      {
+        "max_area_m2": 116,
+        "min_locations": 18
+      },
+      {
+        "max_area_m2": 148,
+        "min_locations": 19
+      },
+      {
+        "max_area_m2": 156,
+        "min_locations": 20
+      },
+      {
+        "max_area_m2": 192,
+        "min_locations": 21
+      },
+      {
+        "max_area_m2": 232,
+        "min_locations": 22
+      },
+      {
+        "max_area_m2": 276,
+        "min_locations": 23
+      },
+      {
+        "max_area_m2": 352,
+        "min_locations": 24
+      },
+      {
+        "max_area_m2": 436,
+        "min_locations": 25
+      },
+      {
+        "max_area_m2": 636,
+        "min_locations": 26
+      },
+      {
+        "max_area_m2": 1000,
+        "min_locations": 27
+      }
+    ],
+    "above_1000_m2_formula": "ceil(27 * (area_m2 / 1000.0))",
+    "sample_volume_rules": {
+      "urs_id": "URS-PART-002",
+      "grade_a_override_liters": 1000.0,
+      "grade_a_source": "EU GMP Annex 1 (2022) Section 4 (Cleanroom Qualification: 1 m\u00b3 minimum sample volume per location for Grade A)",
+      "iso_formula": "Vs = (20 / Cn_m) * 1000 liters (minimum 2 liters and 60 seconds per sample)",
+      "iso_source": "ISO 14644-1:2015 Annex A",
+      "limit_direction": "lower"
+    }
+  },
+  "criteria": [
+    {
+      "urs_id": "URS-DP-001",
+      "title": "Positive cascade dP between different grades",
+      "quantity_kind": "pressure",
+      "unit": "Pa",
+      "limit_direction": "lower",
+      "limit_min": 10.0,
+      "limit_max": null,
+      "tolerance_source": "linked_instrument",
+      "applies_to_grades": [
+        "Grade A",
+        "Grade B",
+        "Grade C",
+        "Grade D"
+      ],
+      "applies_to_states": null,
+      "applies_to_phases": null,
+      "applies_to_zone_types": null,
+      "applies_to_pressure_intents": [
+        "positive_cascade"
+      ],
+      "source": "EU GMP Annex 1 (2022) Section 4 (guidance minimum 10 Pa between different grades)",
+      "source_type": "REGULATORY_GUIDANCE",
+      "verification_status": "UNVERIFIED",
+      "verified_on": null,
+      "notes": "dP = P_room - P_neighbor. Engine applies only when neighbour grade differs."
+    }
+  ]
+}
