@@ -1,7 +1,7 @@
-[![License: Proprietary](https://shields.io)](https://github.com)
-[![Python Version](https://shields.io)](https://python.org)
-[![Pydantic v2](https://shields.io)](https://pydantic.dev)
-[![Compliance](https://shields.io)](https://github.com)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](https://github.com)
+[![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11-blue.svg)](https://www.python.org)
+[![Pydantic v2](https://img.shields.io/badge/Pydantic-v2-green.svg)](https://docs.pydantic.dev)
+[![Compliance](https://img.shields.io/badge/GxP-EU%20GMP%20Annex%201%20%7C%20ISO%2014644-purple.svg)](https://github.com)
 
 # PHARMA_CQV_ENGINE
 ### Enterprise Pharma & Cleanroom CQV Decision-Support Agent
@@ -21,14 +21,14 @@ The following sequence outlines how telemetry and protocol data flow through our
 
 ```mermaid
 graph TD
-    A["Telemetry / Protocol Input"] --> B{"Security Sandbox & RAG Check"}
-    B -->|Clean / Sandboxed| C["Deterministic Physics Engine (50 Rules)"]
-    C -->|Simple-Acceptance Guard Bands| D["Verdict Combiner: PASS / FAIL / INDETERMINATE"]
-    D --> E["Pre-Substitution Validator (Zero Hallucination Guard)"]
-    E --> F["Stateful LangGraph HITL Orchestrator"]
-    F -->|Interrupt| G["Mandatory QA / QP Electronic Sign-Off"]
-    G --> H["Cryptographic Keyed-HMAC Audit Chain"]
-    H --> I["Streamlit Web App & PDF Dossier Export"]
+    A[Telemetry / Protocol Input] --> B{Security Sandbox & RAG Check}
+    B -->|Clean / Sandboxed| C[Deterministic Physics Engine (50 Rules)]
+    C -->|Simple-Acceptance Guard Bands| D[Verdict Combiner: PASS / FAIL / INDETERMINATE]
+    D --> E[Pre-Substitution Validator (Zero Hallucination Guard)]
+    E --> F[Stateful LangGraph HITL Orchestrator]
+    F -->|Interrupt| G[Mandatory QA / QP Electronic Sign-Off]
+    G --> H[Cryptographic Keyed-HMAC Audit Chain]
+    H --> I[Streamlit Web App & PDF Dossier Export]
 ```
 
 ---
@@ -48,7 +48,7 @@ stateDiagram-v2
 ---
 
 ## ⚙️ Core Architecture Modules
-* **`pharma_cqv_core/engine.py`**: Deterministic physics engine evaluating 50 rules across calibration linkage, multi-neighbor pressure cascades (ΔP), ISO 14644-1 Table A.1 sampling locations, 1,000 L Grade A sample volume, HVAC ACH / unidirectional velocity (0.36–0.54 m/s), HEPA H13/H14 installed filter integrity, and Annex 1 Table 6 microbials.
+* **`pharma_cqv_core/engine.py`**: Deterministic physics engine evaluating 50 rules across calibration linkage, multi-neighbor pressure cascades ($\Delta P$), ISO 14644-1 Table A.1 sampling locations, $1,000\text{ L}$ Grade A sample volume, HVAC ACH / unidirectional velocity ($0.36\text{--}0.54\text{ m/s}$), HEPA H13/H14 installed filter integrity, and Annex 1 Table 6 microbials.
 * **`pharma_cqv_core/validator.py`**: Pre-substitution guard that blocks any stray digits, spelled-out number words, or verdict-contradicting terminology in LLM draft narratives.
 * **`graph_orchestrator.py`**: Stateful Human-in-the-Loop (HITL) workflow managing mandatory QA electronic sign-off interrupts and cryptographic keyed-HMAC audit trails.
 * **`app_pharma_cqv_sentry.py`**: Streamlit command center featuring RTM trace tables, protocol gap reviews, and single-page ReportLab PDF dossiers.
