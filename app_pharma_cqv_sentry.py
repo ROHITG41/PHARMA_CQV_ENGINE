@@ -6,7 +6,7 @@ import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 import streamlit as st
@@ -18,7 +18,7 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 # ==============================================================================
-# PAGE CONFIGURATION & GLOBAL STYLING (FIX #7: TOP PADDING + EXECUTIVE THEME)
+# PAGE CONFIGURATION & GLOBAL STYLING
 # ==============================================================================
 st.set_page_config(
     page_title="PHARMA_CQV_ENGINE | Cleanroom CQV Command Center",
@@ -73,7 +73,7 @@ st.markdown(
 )
 
 # ==============================================================================
-# 50-RULE REGULATORY RULEBOOK LOADER (EU GMP ANNEX 1 & ISO 14644-1/-2/-3)
+# 50-RULE REGULATORY RULEBOOK LOADER (EU GMP ANNEX 1 & ISO 14644 + PROJECT URS)
 # ==============================================================================
 def get_50_rules() -> List[Dict[str, Any]]:
     json_path = Path("pharma_cqv_core/acceptance_criteria.json")
@@ -108,13 +108,13 @@ def get_50_rules() -> List[Dict[str, Any]]:
                         "Phase": str(r.get("phase", "IQ/OQ/PQ")),
                         "Parameter": str(r.get("parameter") or r.get("name") or "Parameter"),
                         "Acceptance Limit": limit_str,
-                        "Regulatory Citation": str(r.get("citation") or r.get("regulatory_reference") or "EU GMP Annex 1 / ISO 14644"),
+                        "Regulatory Citation": str(r.get("citation") or r.get("regulatory_reference") or "EU GMP Annex 1 / Project URS"),
                     })
                 return normalized
         except Exception:
             pass
 
-    # Built-in 50-rule canonical GxP RTM table (used seamlessly on Streamlit Cloud)
+    # Verified 50-rule RTM with accurate EU GMP Annex 1 (2022) / ISO 14644 vs. Project URS citations
     rules = [
         ("URS-PART-001A", "Non-Viable Particles", "Grade A", "At-Rest", "IQ/OQ/PQ", "Particles >= 0.5 um", "<= 3,520 /m3", "EU GMP Annex 1 Table 1 / ISO 14644-1 Class 5"),
         ("URS-PART-001B", "Non-Viable Particles", "Grade A", "In-Operation", "IQ/OQ/PQ", "Particles >= 0.5 um", "<= 3,520 /m3", "EU GMP Annex 1 Table 1 / ISO 14644-1 Class 5"),
@@ -132,26 +132,26 @@ def get_50_rules() -> List[Dict[str, Any]]:
         ("URS-PART-004B", "Non-Viable Particles", "Grade D", "At-Rest", "IQ/OQ/PQ", "Particles >= 5.0 um", "<= 29,300 /m3", "EU GMP Annex 1 Table 1"),
         ("URS-PART-004C", "Non-Viable Particles", "Grade D", "In-Operation", "IQ/OQ/PQ", "Particles >= 0.5 um & >= 5.0 um", "Predetermined by CCS", "EU GMP Annex 1 Table 1 Footnote (b)"),
         ("URS-PART-005", "Sampling Metrology", "Grade A", "At-Rest & In-Operation", "IQ/OQ/PQ", "Single Sample Volume (Vs)", ">= 1,000 L (1.0 m3)", "EU GMP Annex 1 §9.15"),
-        ("URS-PART-006", "Sampling Metrology", "Grade B, C, D", "At-Rest & In-Operation", "IQ/OQ/PQ", "ISO Sample Volume Formula", "Vs = (20/Cn,m)*1000 L (>= 2 L)", "ISO 14644-1:2015 §A.4.2"),
+        ("URS-PART-006", "Sampling Metrology", "Grade B, C, D", "At-Rest & In-Operation", "IQ/OQ/PQ", "ISO Sample Volume Formula", "Vs = (20/Cn,m)*1000 L (>= 2 L)", "ISO 14644-1:2015 Annex A"),
         ("URS-PART-007", "Sampling Metrology", "All Grades", "At-Rest & In-Operation", "IQ/OQ/PQ", "Minimum Sampling Locations (NL)", "Per ISO 14644-1 Table A.1", "ISO 14644-1:2015 Table A.1"),
-        ("URS-PART-008", "Sampling Metrology", "All Grades", "At-Rest & In-Operation", "IQ/OQ/PQ", "Per-Location Pass Rule", "Each location evaluated independently", "ISO 14644-1:2015 §A.5"),
-        ("URS-DP-001", "Pressure Cascade", "Grade A", "At-Rest & In-Operation", "IQ/OQ/PQ", "Grade A to Grade B Differential Pressure", ">= +15.0 Pa", "EU GMP Annex 1 §4.16"),
-        ("URS-DP-002", "Pressure Cascade", "Grade B", "At-Rest & In-Operation", "IQ/OQ/PQ", "Grade B to Grade C Differential Pressure", ">= +10.0 to +15.0 Pa", "EU GMP Annex 1 §4.16"),
-        ("URS-DP-003", "Pressure Cascade", "Grade C", "At-Rest & In-Operation", "IQ/OQ/PQ", "Grade C to Grade D Differential Pressure", ">= +10.0 to +15.0 Pa", "EU GMP Annex 1 §4.16"),
-        ("URS-DP-004", "Pressure Cascade", "Grade D", "At-Rest & In-Operation", "IQ/OQ/PQ", "Grade D to Unclassified Differential Pressure", ">= +10.0 Pa", "EU GMP Annex 1 §4.16 / ISPE Vol. 5"),
+        ("URS-PART-008", "Sampling Metrology", "All Grades", "At-Rest & In-Operation", "IQ/OQ/PQ", "Per-Location Pass Rule", "Each location evaluated independently", "ISO 14644-1:2015 Annex A"),
+        ("URS-DP-001", "Pressure Cascade", "Grade A", "At-Rest & In-Operation", "IQ/OQ/PQ", "Grade A to Grade B Differential Pressure", ">= +15.0 Pa", "Project URS (EU GMP Annex 1 §4.16 guidance: 10–15 Pa)"),
+        ("URS-DP-002", "Pressure Cascade", "Grade B", "At-Rest & In-Operation", "IQ/OQ/PQ", "Grade B to Grade C Differential Pressure", ">= +10.0 Pa", "Project URS (EU GMP Annex 1 §4.16 guidance: 10–15 Pa)"),
+        ("URS-DP-003", "Pressure Cascade", "Grade C", "At-Rest & In-Operation", "IQ/OQ/PQ", "Grade C to Grade D Differential Pressure", ">= +10.0 Pa", "Project URS (EU GMP Annex 1 §4.16 guidance: 10–15 Pa)"),
+        ("URS-DP-004", "Pressure Cascade", "Grade D", "At-Rest & In-Operation", "IQ/OQ/PQ", "Grade D to Unclassified Differential Pressure", ">= +10.0 Pa", "Project URS (EU GMP Annex 1 §4.16 guidance: 10–15 Pa)"),
         ("URS-DP-005", "Pressure Cascade", "All Grades", "In-Operation", "IQ/OQ/PQ", "Airlock Door Interlock & Alarm Delay", "Visual/audible alarm on breach", "EU GMP Annex 1 §4.16"),
-        ("URS-DP-006", "Pressure Cascade", "All Grades", "In-Operation", "OQ/PQ", "BMS Door-Open Pressure Recovery", "Restored within validated window", "ISPE Baseline Guide Vol. 5"),
-        ("URS-HVAC-001A", "Airflow & Velocity", "Grade A", "At-Rest & In-Operation", "IQ/OQ/PQ", "Unidirectional Airflow Velocity (Lower)", ">= 0.36 m/s", "EU GMP Annex 1 §4.14"),
-        ("URS-HVAC-001B", "Airflow & Velocity", "Grade A", "At-Rest & In-Operation", "IQ/OQ/PQ", "Unidirectional Airflow Velocity (Upper)", "<= 0.54 m/s", "EU GMP Annex 1 §4.14"),
+        ("URS-DP-006", "Pressure Cascade", "All Grades", "In-Operation", "OQ/PQ", "BMS Door-Open Pressure Recovery", "Restored within validated window", "Project URS / ISPE Baseline Guide Vol. 5"),
+        ("URS-HVAC-001A", "Airflow & Velocity", "Grade A", "At-Rest & In-Operation", "IQ/OQ/PQ", "Unidirectional Airflow Velocity (Lower)", ">= 0.36 m/s", "EU GMP Annex 1 §4.14 (Guidance) / Project URS"),
+        ("URS-HVAC-001B", "Airflow & Velocity", "Grade A", "At-Rest & In-Operation", "IQ/OQ/PQ", "Unidirectional Airflow Velocity (Upper)", "<= 0.54 m/s", "EU GMP Annex 1 §4.14 (Guidance) / Project URS"),
         ("URS-HVAC-002A", "Airflow Visualization", "Grade A", "At-Rest & In-Operation", "OQ/PQ", "In-Situ Smoke Study Video", "Confirmed unidirectional, zero reflux", "EU GMP Annex 1 §4.15"),
         ("URS-HVAC-002B", "Airflow Visualization", "Grade B", "At-Rest & In-Operation", "OQ/PQ", "Background Airflow Visualization", "Demonstrates cascade away from Grade A", "EU GMP Annex 1 §4.15"),
-        ("URS-HVAC-003A", "Air Change Rate", "Grade B", "At-Rest & In-Operation", "IQ/OQ/PQ", "Grade B Turbulent Air Changes (ACH)", ">= 20 ACH (URS / Clean-up driven)", "EU GMP Annex 1 §4.17 / ISPE Vol. 5"),
-        ("URS-HVAC-003B", "Air Change Rate", "Grade C", "At-Rest & In-Operation", "IQ/OQ/PQ", "Grade C Turbulent Air Changes (ACH)", ">= 20 ACH (URS / Clean-up driven)", "EU GMP Annex 1 §4.17 / ISPE Vol. 5"),
-        ("URS-HVAC-003C", "Air Change Rate", "Grade D", "At-Rest & In-Operation", "IQ/OQ/PQ", "Grade D Turbulent Air Changes (ACH)", ">= 10 ACH (URS / Clean-up driven)", "ISPE Baseline Guide Vol. 5"),
-        ("URS-HVAC-004", "Clean-Up Recovery", "Grade A, B, C", "At-Rest", "OQ/PQ", "100:1 Particle Decay Recovery Time", "<= 15 to 20 min", "EU GMP Annex 1 §4.17 / ISO 14644-3"),
-        ("URS-HEPA-001", "Filter Integrity", "Grade A, B", "At-Rest", "IQ/OQ/PQ", "Installed HEPA H14 PAO/DOP Scan Leakage", "<= 0.01 %", "ISO 14644-3 §B.7 / EU Annex 1 §4.22"),
-        ("URS-HEPA-002", "Filter Integrity", "Grade C, D", "At-Rest", "IQ/OQ/PQ", "Installed HEPA H13/H14 Integrity Penetration", "<= 0.01 %", "ISO 14644-3 §B.7"),
-        ("URS-HEPA-003", "Filter Integrity", "All Grades", "At-Rest", "IQ/OQ/PQ", "HEPA Filter Differential Pressure Drop", "Within clean-to-dirty URS bounds", "ISPE Baseline Guide Vol. 5"),
+        ("URS-HVAC-003A", "Air Change Rate", "Grade B", "At-Rest & In-Operation", "IQ/OQ/PQ", "Grade B Turbulent Air Changes (ACH)", ">= 20 ACH (Clean-up driven)", "Project URS / ISPE Baseline Guide Vol. 5"),
+        ("URS-HVAC-003B", "Air Change Rate", "Grade C", "At-Rest & In-Operation", "IQ/OQ/PQ", "Grade C Turbulent Air Changes (ACH)", ">= 20 ACH (Clean-up driven)", "Project URS / ISPE Baseline Guide Vol. 5"),
+        ("URS-HVAC-003C", "Air Change Rate", "Grade D", "At-Rest & In-Operation", "IQ/OQ/PQ", "Grade D Turbulent Air Changes (ACH)", ">= 10 ACH (Clean-up driven)", "Project URS / ISPE Baseline Guide Vol. 5"),
+        ("URS-HVAC-004", "Clean-Up Recovery", "Grade A, B, C", "At-Rest", "OQ/PQ", "100:1 Particle Decay Recovery Time", "<= 15 to 20 min", "EU GMP Annex 1 §4.17 (Guidance) / ISO 14644-3"),
+        ("URS-HEPA-001", "Filter Integrity", "Grade A, B", "At-Rest", "IQ/OQ/PQ", "Installed HEPA H14 PAO/DOP Scan Leakage", "<= 0.01 %", "Project URS / ISO 14644-3 Annex B"),
+        ("URS-HEPA-002", "Filter Integrity", "Grade C, D", "At-Rest", "IQ/OQ/PQ", "Installed HEPA H13/H14 Integrity Penetration", "<= 0.01 %", "Project URS / ISO 14644-3 Annex B"),
+        ("URS-HEPA-003", "Filter Integrity", "All Grades", "At-Rest", "IQ/OQ/PQ", "HEPA Filter Differential Pressure Drop", "Within clean-to-dirty URS bounds", "Project URS / ISPE Baseline Guide Vol. 5"),
         ("URS-MICRO-001A", "Viable Microbial", "Grade A", "In-Operation", "PQ/Monitoring", "Active Air Sample (1.0 m3)", "< 1 CFU/m3 (No growth)", "EU GMP Annex 1 Table 6"),
         ("URS-MICRO-001B", "Viable Microbial", "Grade A", "In-Operation", "PQ/Monitoring", "Settle Plate (90 mm, 4 hr exposure)", "< 1 CFU/4 hrs (No growth)", "EU GMP Annex 1 Table 6"),
         ("URS-MICRO-001C", "Viable Microbial", "Grade A", "In-Operation", "PQ/Monitoring", "Contact Plate (55 mm) & 5-Finger Glove", "< 1 CFU/plate (No growth)", "EU GMP Annex 1 Table 6"),
@@ -162,10 +162,10 @@ def get_50_rules() -> List[Dict[str, Any]]:
         ("URS-MICRO-004", "Viable Microbial", "Grade D", "In-Operation", "PQ/Monitoring", "Active Air / Settle / Contact Plates", "<= 200 CFU/m3 / <= 100 / <= 50 CFU", "EU GMP Annex 1 Table 6"),
         ("URS-CAL-001", "Metrology & Guard-Band", "All Grades", "At-Rest & In-Operation", "IQ/OQ/PQ", "Instrument Calibration Due Date Validity", "Test date <= Cal due date", "21 CFR Part 11 / ALCOA+"),
         ("URS-CAL-002", "Metrology & Guard-Band", "All Grades", "At-Rest & In-Operation", "IQ/OQ/PQ", "Instrument Traceability & Uncertainty Spec", "Linked ID + documented ±tolerance", "ISO/IEC 17025 / GAMP 5"),
-        ("URS-CAL-003", "Metrology & Guard-Band", "All Grades", "At-Rest & In-Operation", "IQ/OQ/PQ", "Simple-Acceptance Guard-Band Margin", "INDETERMINATE if inside ±uncertainty", "ISO 14253-1 / Simple Acceptance"),
-        ("URS-ENV-001", "Thermal & Humidity", "Grade A, B", "At-Rest & In-Operation", "IQ/OQ/PQ", "Cleanroom Ambient Temperature Envelope", "18.0 – 22.0 °C", "URS / ISPE Baseline Guide Vol. 5"),
-        ("URS-ENV-002", "Thermal & Humidity", "Grade A, B", "At-Rest & In-Operation", "IQ/OQ/PQ", "Cleanroom Relative Humidity Envelope", "30.0 – 60.0 %RH", "URS / ISPE Baseline Guide Vol. 5"),
-        ("URS-ENV-003", "Data Integrity & HITL", "All Grades", "At-Rest & In-Operation", "IQ/OQ/PQ", "QA/QP Electronic Sign-Off & Keyed-HMAC", "Mandatory HITL lock + HMAC-SHA256", "21 CFR Part 11 / EMA Annex 22"),
+        ("URS-CAL-003", "Metrology & Guard-Band", "All Grades", "At-Rest & In-Operation", "IQ/OQ/PQ", "Simple-Acceptance Guard-Band Margin", "INDETERMINATE if inside ±uncertainty", "ISO 14253-1 / Project URS"),
+        ("URS-ENV-001", "Thermal & Humidity", "Grade A, B", "At-Rest & In-Operation", "IQ/OQ/PQ", "Cleanroom Ambient Temperature Envelope", "18.0 – 22.0 °C", "Project URS / ISPE Baseline Guide Vol. 5"),
+        ("URS-ENV-002", "Thermal & Humidity", "Grade A, B", "At-Rest & In-Operation", "IQ/OQ/PQ", "Cleanroom Relative Humidity Envelope", "30.0 – 60.0 %RH", "Project URS / ISPE Baseline Guide Vol. 5"),
+        ("URS-ENV-003", "Data Integrity & HITL", "All Grades", "At-Rest & In-Operation", "IQ/OQ/PQ", "QA/QP Electronic Sign-Off & Keyed-HMAC", "Mandatory HITL lock + HMAC-SHA256", "21 CFR Part 11 / EU GMP Annex 11"),
     ]
     return [
         {
@@ -183,7 +183,7 @@ def get_50_rules() -> List[Dict[str, Any]]:
 
 
 # ==============================================================================
-# DETERMINISTIC PHYSICS & GUARD-BAND ENGINE (FIX #6: OPERATING STATE + PHASE)
+# DETERMINISTIC PHYSICS & GUARD-BAND ENGINE (OPTION A: DYNAMIC SCOPE LINE)
 # ==============================================================================
 def evaluate_guard_band_min(measured: float, limit_min: float, tolerance: float) -> str:
     if measured < (limit_min - tolerance):
@@ -215,6 +215,7 @@ def run_deterministic_physics(
     gates.append({
         "Rule ID": "URS-CAL-001",
         "Gate": "Instrument Calibration Window",
+        "Category": "calibration",
         "Measured": "Valid & Traceable" if cal_valid else "Expired / Unverified",
         "Acceptance Limit": "Test Date <= Cal Due Date",
         "Status": cal_status,
@@ -231,32 +232,51 @@ def run_deterministic_physics(
     gates.append({
         "Rule ID": dp_rule,
         "Gate": f"Differential Pressure Cascade ({grade})",
+        "Category": "ΔP cascade",
         "Measured": f"{dp_pa:.2f} Pa (±{dp_tol:.2f} Pa)",
         "Acceptance Limit": f">= {dp_limit:.1f} Pa",
         "Status": dp_status,
     })
 
-    # Gate 3: Airflow Velocity (Grade A) vs. Air Changes per Hour (Grade B/C/D)
+    # Gate 3: Airflow Velocity (Grade A — separate Rule IDs URS-HVAC-001A & URS-HVAC-001B) vs. ACH (Grade B/C/D)
     if grade == "Grade A":
         vel_tol = 0.02
-        if velocity_ms < (0.36 - vel_tol) or velocity_ms > (0.54 + vel_tol):
-            vel_status = "FAIL"
-        elif velocity_ms < 0.36 or velocity_ms > 0.54:
-            vel_status = "INDETERMINATE"
+        if velocity_ms < (0.36 - vel_tol):
+            vel_low_status = "FAIL"
+        elif velocity_ms < 0.36:
+            vel_low_status = "INDETERMINATE"
         else:
-            vel_status = "PASS"
+            vel_low_status = "PASS"
+
+        if velocity_ms > (0.54 + vel_tol):
+            vel_high_status = "FAIL"
+        elif velocity_ms > 0.54:
+            vel_high_status = "INDETERMINATE"
+        else:
+            vel_high_status = "PASS"
+
         gates.append({
-            "Rule ID": "URS-HVAC-001A/B",
-            "Gate": "Unidirectional Airflow Velocity",
+            "Rule ID": "URS-HVAC-001A",
+            "Gate": "Unidirectional Airflow Velocity (Lower Bound)",
+            "Category": "airflow",
             "Measured": f"{velocity_ms:.2f} m/s",
-            "Acceptance Limit": "0.36 – 0.54 m/s",
-            "Status": vel_status,
+            "Acceptance Limit": ">= 0.36 m/s",
+            "Status": vel_low_status,
+        })
+        gates.append({
+            "Rule ID": "URS-HVAC-001B",
+            "Gate": "Unidirectional Airflow Velocity (Upper Bound)",
+            "Category": "airflow",
+            "Measured": f"{velocity_ms:.2f} m/s",
+            "Acceptance Limit": "<= 0.54 m/s",
+            "Status": vel_high_status,
         })
 
         smoke_status = "PASS" if smoke_confirmed else "FAIL"
         gates.append({
             "Rule ID": "URS-HVAC-002A",
             "Gate": f"In-Situ Smoke Study ({operating_state})",
+            "Category": "airflow",
             "Measured": "HD Video Confirmed (Zero Reflux)" if smoke_confirmed else "Not Confirmed / Omitted",
             "Acceptance Limit": "Confirmed Unidirectional Sweep",
             "Status": smoke_status,
@@ -268,6 +288,7 @@ def run_deterministic_physics(
         gates.append({
             "Rule ID": ach_rule,
             "Gate": f"Cleanroom Air Change Rate ({grade})",
+            "Category": "airflow",
             "Measured": f"{ach:.1f} ACH",
             "Acceptance Limit": f">= {ach_limit:.0f} ACH",
             "Status": ach_status,
@@ -289,6 +310,7 @@ def run_deterministic_physics(
         gates.append({
             "Rule ID": p05_rule,
             "Gate": f"Particles >= 0.5 um ({operating_state})",
+            "Category": "particles",
             "Measured": f"{particles_05:,} /m3",
             "Acceptance Limit": "Predetermined by CCS (N/A)",
             "Status": "NOT_APPLICABLE",
@@ -298,6 +320,7 @@ def run_deterministic_physics(
         gates.append({
             "Rule ID": p05_rule,
             "Gate": f"Particles >= 0.5 um ({operating_state})",
+            "Category": "particles",
             "Measured": f"{particles_05:,} /m3",
             "Acceptance Limit": f"<= {p05_limit:,} /m3",
             "Status": p05_status,
@@ -308,6 +331,7 @@ def run_deterministic_physics(
         gates.append({
             "Rule ID": "URS-PART-001C",
             "Gate": "Particles >= 5.0 um (Classification)",
+            "Category": "particles",
             "Measured": f"{particles_50:,} /m3",
             "Acceptance Limit": "Not specified in Annex 1 Table 1 (N/A)",
             "Status": "NOT_APPLICABLE",
@@ -317,6 +341,7 @@ def run_deterministic_physics(
         gates.append({
             "Rule ID": "URS-PART-001D",
             "Gate": "Particles >= 5.0 um (Monitoring)",
+            "Category": "particles",
             "Measured": f"{particles_50:,} /m3",
             "Acceptance Limit": "<= 29 /m3 (Annex 1 Table 5)",
             "Status": p50_status,
@@ -335,6 +360,7 @@ def run_deterministic_physics(
             gates.append({
                 "Rule ID": p50_rule,
                 "Gate": f"Particles >= 5.0 um ({operating_state})",
+                "Category": "particles",
                 "Measured": f"{particles_50:,} /m3",
                 "Acceptance Limit": "Predetermined by CCS (N/A)",
                 "Status": "NOT_APPLICABLE",
@@ -344,6 +370,7 @@ def run_deterministic_physics(
             gates.append({
                 "Rule ID": p50_rule,
                 "Gate": f"Particles >= 5.0 um ({operating_state})",
+                "Category": "particles",
                 "Measured": f"{particles_50:,} /m3",
                 "Acceptance Limit": f"<= {p50_limit:,} /m3",
                 "Status": p50_status,
@@ -364,13 +391,28 @@ def run_deterministic_physics(
     gates.append({
         "Rule ID": m_rule,
         "Gate": "Active Air Viable Microbial Count",
+        "Category": "active-air microbial",
         "Measured": f"{microbial_cfu:.2f} CFU/m3",
         "Acceptance Limit": m_label,
         "Status": m_status,
     })
 
+    # Build dynamic evaluated scope line (excluding NOT_APPLICABLE gates)
+    evaluated_gates = [g for g in gates if g["Status"] != "NOT_APPLICABLE"]
+    eval_count = len(evaluated_gates)
+    seen_cats: List[str] = []
+    for g in evaluated_gates:
+        if g["Category"] not in seen_cats:
+            seen_cats.append(g["Category"])
+
+    scope_line = (
+        f"Scope of this run: {eval_count} gates evaluated ({', '.join(seen_cats)}). "
+        f"Not evaluated: settle, contact and glove plates, HEPA integrity, sampling locations and volumes, "
+        f"clean-up recovery, temperature and humidity."
+    )
+
     # Overall Verdict Combiner (FAIL > INDETERMINATE > PASS)
-    statuses = [g["Status"] for g in gates if g["Status"] != "NOT_APPLICABLE"]
+    statuses = [g["Status"] for g in evaluated_gates]
     if "FAIL" in statuses:
         overall = "FAIL"
     elif "INDETERMINATE" in statuses:
@@ -378,9 +420,9 @@ def run_deterministic_physics(
     else:
         overall = "PASS"
 
-    # Zero-Hallucination Template-Populated Narrative (OBJ-05)
-    failed_gates = [g["Gate"] for g in gates if g["Status"] == "FAIL"]
-    indet_gates = [g["Gate"] for g in gates if g["Status"] == "INDETERMINATE"]
+    # Honest, Non-Overclaiming Deterministic Narrative
+    failed_gates = [g["Gate"] for g in evaluated_gates if g["Status"] == "FAIL"]
+    indet_gates = [g["Gate"] for g in evaluated_gates if g["Status"] == "INDETERMINATE"]
     airflow_summary = (
         f"unidirectional velocity {velocity_ms:.2f} m/s"
         if grade == "Grade A"
@@ -390,10 +432,10 @@ def run_deterministic_physics(
     if overall == "PASS":
         narrative = (
             f"Deterministic CQV evaluation for zone {zone_id} ({grade}, {operating_state}, {qual_phase}) "
-            f"achieved an overall verdict of PASS. Differential pressure recorded at {dp_pa:.2f} Pa "
-            f"(±{dp_tol:.2f} Pa uncertainty), {airflow_summary}, non-viable particle counts of "
-            f"{particles_05:,} /m3 (>=0.5 um) and {particles_50:,} /m3 (>=5.0 um), and active microbial "
-            f"count of {microbial_cfu:.2f} CFU/m3 satisfied all applicable EU GMP Annex 1 and ISO 14644-1 criteria."
+            f"achieved an overall verdict of PASS and met all gate checks evaluated in this run. "
+            f"Differential pressure recorded at {dp_pa:.2f} Pa (±{dp_tol:.2f} Pa uncertainty), {airflow_summary}, "
+            f"non-viable particle counts of {particles_05:,} /m3 (>=0.5 um) and {particles_50:,} /m3 (>=5.0 um), "
+            f"and active-air microbial count of {microbial_cfu:.2f} CFU/m3 satisfied all evaluated gate limits."
         )
     elif overall == "INDETERMINATE":
         narrative = (
@@ -407,9 +449,14 @@ def run_deterministic_physics(
             f"Deterministic CQV evaluation for zone {zone_id} ({grade}, {operating_state}, {qual_phase}) "
             f"returned FAIL. Non-compliant gate(s) identified: {', '.join(failed_gates)}. "
             f"Recorded telemetry: differential pressure {dp_pa:.2f} Pa (±{dp_tol:.2f} Pa), {airflow_summary}, "
-            f"particles {particles_05:,} /m3 (>=0.5 um) and {particles_50:,} /m3 (>=5.0 um), microbials "
+            f"particles {particles_05:,} /m3 (>=0.5 um) and {particles_50:,} /m3 (>=5.0 um), active-air microbials "
             f"{microbial_cfu:.2f} CFU/m3. Formal deviation investigation and CAPA are required."
         )
+
+    display_gates = [
+        {k: v for k, v in g.items() if k != "Category"}
+        for g in gates
+    ]
 
     return {
         "zone_id": zone_id,
@@ -417,7 +464,8 @@ def run_deterministic_physics(
         "operating_state": operating_state,
         "qual_phase": qual_phase,
         "overall_verdict": overall,
-        "gates": gates,
+        "scope_line": scope_line,
+        "gates": display_gates,
         "narrative": narrative,
         "evaluated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
     }
@@ -425,7 +473,6 @@ def run_deterministic_physics(
 
 # ==============================================================================
 # MODULE 2: DATA INTEGRITY, TAMPER PROTECTION & PRE-EXECUTION PROTOCOL GAP SCAN
-# (FIXES #1, #2, #3, #4, #5)
 # ==============================================================================
 INJECTION_PATTERNS = [
     r"</untrusted_protocol_document>",
@@ -449,12 +496,10 @@ def scan_protocol_tamper_and_gaps(raw_user_text: str) -> Dict[str, Any]:
     if not cleaned:
         return {"blocked": False, "empty": True, "sandboxed_xml": "", "gaps": []}
 
-    # Fix #1: Strip outer matching wrapper if user pasted one, then auto-wrap cleanly
     inner = cleaned
     if inner.startswith("<untrusted_protocol_document>") and inner.endswith("</untrusted_protocol_document>"):
         inner = inner[len("<untrusted_protocol_document>") : -len("</untrusted_protocol_document>")].strip()
 
-    # Fix #4: Check for inner tag-breakout or synonym prompt-injection / tamper patterns
     for pat in INJECTION_PATTERNS:
         if re.search(pat, inner, flags=re.IGNORECASE):
             return {
@@ -469,8 +514,6 @@ def scan_protocol_tamper_and_gaps(raw_user_text: str) -> Dict[str, Any]:
     lower_txt = inner.lower()
     gaps: List[str] = []
 
-    # Fix #2 & #3: Pre-Execution IQ/OQ/PQ Protocol Procedure & Acceptance Criteria Checks
-    # 1. Smoke study check (Plain-English phrasing per Fix #2)
     if any(k in lower_txt for k in ["smoke study deferred", "smoke study omitted", "defer smoke", "omit smoke", "in lieu of airflow visualization"]):
         gaps.append(
             "Gap [URS-HVAC-002A]: Airflow visualization (smoke study) must be completed before Grade A qualification sign-off."
@@ -480,32 +523,29 @@ def scan_protocol_tamper_and_gaps(raw_user_text: str) -> Dict[str, Any]:
             "Gap [URS-HVAC-002A]: Protocol does not specify an in-situ airflow visualization (smoke study) under At-Rest and simulated In-Operation conditions."
         )
 
-    # 2. Unidirectional airflow velocity acceptance criteria check (0.36 - 0.54 m/s)
     vel_matches = re.findall(r"(\d+\.\d+)\s*m/s", lower_txt)
     for v_str in vel_matches:
         val = float(v_str)
         if val < 0.36:
             gaps.append(
-                f"Gap [URS-HVAC-001A]: Specified velocity acceptance criterion ({val:.2f} m/s) is below the EU GMP Annex 1 minimum guidance threshold of 0.36 m/s."
+                f"Gap [URS-HVAC-001A]: Specified velocity acceptance criterion ({val:.2f} m/s) is below the EU GMP Annex 1 §4.14 guidance threshold of 0.36 m/s."
             )
         elif val > 0.54:
             gaps.append(
-                f"Gap [URS-HVAC-001B]: Specified velocity acceptance criterion ({val:.2f} m/s) exceeds the EU GMP Annex 1 upper guidance threshold of 0.54 m/s."
+                f"Gap [URS-HVAC-001B]: Specified velocity acceptance criterion ({val:.2f} m/s) exceeds the EU GMP Annex 1 §4.14 upper guidance threshold of 0.54 m/s."
             )
 
-    # 3. HEPA Filter DOP / PAO Integrity Test check
     if any(k in lower_txt for k in ["dop/pao aerosol challenge test omitted", "visual inspection of hepa frame only", "hepa test omitted", "skip dop", "skip pao"]):
         gaps.append(
-            "Gap [URS-HEPA-001]: Installed HEPA filter integrity testing (PAO/DOP aerosol challenge <= 0.01% leakage) must be executed; visual frame inspection alone is non-compliant with ISO 14644-3."
+            "Gap [URS-HEPA-001]: Installed HEPA filter integrity testing (PAO/DOP aerosol challenge <= 0.01% leakage per Project URS / ISO 14644-3) must be executed; visual frame inspection alone is non-compliant."
         )
 
-    # 4. Differential pressure cascade check (< 15 Pa for Grade A or < 10 Pa general)
     dp_matches = re.findall(r"(\d+(?:\.\d+)?)\s*pa\b", lower_txt)
     for dp_str in dp_matches:
         dp_v = float(dp_str)
         if "grade a" in lower_txt and dp_v < 15.0:
             gaps.append(
-                f"Gap [URS-DP-001]: Specified differential pressure criterion (+{dp_v:.1f} Pa) is below the +15.0 Pa minimum cascade required across Grade A/B boundaries."
+                f"Gap [URS-DP-001]: Specified differential pressure criterion (+{dp_v:.1f} Pa) is below the +15.0 Pa Project URS cascade required across Grade A/B boundaries (Annex 1 §4.16 guidance: 10–15 Pa)."
             )
         elif dp_v < 10.0:
             gaps.append(
@@ -521,10 +561,25 @@ def scan_protocol_tamper_and_gaps(raw_user_text: str) -> Dict[str, Any]:
 
 
 # ==============================================================================
-# MODULE 3: KEYED-HMAC SIGNER & DUAL-MODE REPORTLAB PDF GENERATOR (FIXES #7, #8)
+# MODULE 3: KEYED-HMAC SIGNER (WITH DEMO-KEY DETECTION) & PDF GENERATOR
 # ==============================================================================
-def compute_keyed_hmac(payload_dict: Dict[str, Any], signer_name: str, meaning: str, signed_utc: str) -> str:
-    secret_key = os.environ.get("SENTRY_CQV_HMAC_SECRET", "PHARMA-CQV-GXP-AUDIT-KEY-2026").encode("utf-8")
+def get_hmac_secret_and_mode() -> Tuple[bytes, bool]:
+    secret_val = ""
+    try:
+        if "SENTRY_CQV_HMAC_SECRET" in st.secrets:
+            secret_val = str(st.secrets["SENTRY_CQV_HMAC_SECRET"]).strip()
+    except Exception:
+        pass
+    if not secret_val:
+        secret_val = os.environ.get("SENTRY_CQV_HMAC_SECRET", "").strip()
+
+    if len(secret_val) >= 16:
+        return secret_val.encode("utf-8"), False
+    return b"DEMO-ONLY-FALLBACK-KEY-NOT-FOR-PRODUCTION", True
+
+
+def compute_keyed_hmac(payload_dict: Dict[str, Any], signer_name: str, meaning: str, signed_utc: str) -> Tuple[str, bool]:
+    secret_key, is_demo_key = get_hmac_secret_and_mode()
     canonical = json.dumps(
         {
             "zone_id": payload_dict["zone_id"],
@@ -539,7 +594,7 @@ def compute_keyed_hmac(payload_dict: Dict[str, Any], signer_name: str, meaning: 
         },
         sort_keys=True,
     ).encode("utf-8")
-    return hmac.new(secret_key, canonical, hashlib.sha256).hexdigest()
+    return hmac.new(secret_key, canonical, hashlib.sha256).hexdigest(), is_demo_key
 
 
 def draw_unofficial_watermark(canv: canvas.Canvas, doc_obj: Any) -> None:
@@ -579,7 +634,17 @@ def build_pdf_dossier(eval_result: Dict[str, Any], signature_record: Optional[Di
         parent=styles["Normal"],
         fontSize=9.5,
         textColor=colors.HexColor("#0E7490") if is_signed else colors.HexColor("#B91C1C"),
-        spaceAfter=10,
+        spaceAfter=8,
+    )
+    scope_style = ParagraphStyle(
+        "DossierScope",
+        parent=styles["Normal"],
+        fontSize=8.5,
+        leading=11.5,
+        textColor=colors.HexColor("#334155"),
+        backColor=colors.HexColor("#F1F5F9"),
+        borderPadding=5,
+        spaceAfter=8,
     )
     body_style = ParagraphStyle(
         "DossierBody",
@@ -592,8 +657,8 @@ def build_pdf_dossier(eval_result: Dict[str, Any], signature_record: Optional[Di
 
     story = []
     if is_signed:
-        story.append(Paragraph("PHARMA_CQV_ENGINE — OFFICIAL SIGNED COMPLIANCE DOSSIER", title_style))
-        story.append(Paragraph("Status: APPROVED & CRYPTOGRAPHICALLY LOCKED (21 CFR Part 11-Aligned Record)", sub_style))
+        story.append(Paragraph("PHARMA_CQV_ENGINE — SIGNED COMPLIANCE DOSSIER", title_style))
+        story.append(Paragraph("Status: SIGNED RECORD (Part 11-aligned demonstration)", sub_style))
     else:
         story.append(Paragraph("PHARMA_CQV_ENGINE — UNOFFICIAL DRAFT PREVIEW", title_style))
         story.append(Paragraph("Status: UNOFFICIAL COPY — NOT AUTHORISED FOR RELEASE (Pending QA/QP Sign-Off)", sub_style))
@@ -614,7 +679,10 @@ def build_pdf_dossier(eval_result: Dict[str, Any], signature_record: Optional[Di
         ("PADDING", (0, 0), (-1, -1), 5),
     ]))
     story.append(meta_tbl)
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
+
+    # Dynamic Scope of Evaluation line directly under Verdict/Metadata
+    story.append(Paragraph(f"<b>{eval_result['scope_line']}</b>", scope_style))
 
     story.append(Paragraph("<b>Deterministic Engineering Determination:</b>", body_style))
     story.append(Paragraph(eval_result["narrative"], body_style))
@@ -637,11 +705,17 @@ def build_pdf_dossier(eval_result: Dict[str, Any], signature_record: Optional[Di
     story.append(Spacer(1, 10))
 
     if is_signed:
+        key_mode_note = (
+            "DEMO KEY (Set SENTRY_CQV_HMAC_SECRET in Streamlit Secrets for deployment key)"
+            if signature_record.get("is_demo_key") == "True"
+            else "Configured Secret Key (SENTRY_CQV_HMAC_SECRET)"
+        )
         sig_rows = [
             ["QA / QP Electronic Sign-Off Record", ""],
             ["Signer Name & Credentials:", signature_record["signer_name"]],
             ["Meaning of Signature (21 CFR 11.50):", signature_record["meaning"]],
             ["Signed Timestamp (UTC):", signature_record["signed_at_utc"]],
+            ["Signing Key Status:", key_mode_note],
             ["Keyed-HMAC (SHA-256) Digest:", signature_record["hmac_digest"]],
         ]
     else:
@@ -702,7 +776,7 @@ if "protocol_input_text" not in st.session_state:
     )
 
 # ==============================================================================
-# SIDEBAR NAVIGATION (4 FULL-WIDTH BUTTONS)
+# SIDEBAR NAVIGATION
 # ==============================================================================
 with st.sidebar:
     st.markdown("### Navigation & Control Center")
@@ -750,13 +824,13 @@ with st.sidebar:
     )
 
 # ==============================================================================
-# FIX #10: TOP ARCHITECT BADGE (MATCHING USER PORTFOLIO SCREENSHOT)
+# TOP ARCHITECT BADGE
 # ==============================================================================
 st.markdown(
     """
     <h2 style="margin-bottom:2px; color:#0F2744;">🛡️ PHARMA_CQV_ENGINE: CLEANROOM CQV COMMAND CENTER</h2>
     <p style="margin-top:0; margin-bottom:10px; color:#0E7490; font-weight:600; font-size:1.05rem;">
-        Deterministic Cleanroom Qualification Auditing | EU GMP Annex 1, ISO 14644 &amp; GAMP 5 Decision-Support Engine
+        Rules-Based Cleanroom Qualification Decision-Support | EU GMP Annex 1, ISO 14644 &amp; GAMP 5
     </p>
     <div class="top-architect-card">
         <div><strong>Lead Systems Architect:</strong> Rohit Kumar, PMP, CEng (India), CEA, FSEr (TÜV)</div>
@@ -769,7 +843,7 @@ st.markdown(
 )
 
 # ==============================================================================
-# MODULE 1: PHYSICS METROLOGY & EVALUATION (FIX #6: OPERATING STATE + PHASE)
+# MODULE 1: PHYSICS METROLOGY & EVALUATION
 # ==============================================================================
 if st.session_state.active_module == "mod1":
     st.info(
@@ -817,7 +891,6 @@ if st.session_state.active_module == "mod1":
             cal_valid=cal_valid,
             smoke_confirmed=smoke_confirmed,
         )
-        # Reset signature whenever new evaluation runs (ALCOA+ integrity)
         st.session_state.signature_record = None
 
     res = st.session_state.last_eval
@@ -829,14 +902,16 @@ if st.session_state.active_module == "mod1":
     else:
         st.error(f"### Overall Verdict for {res['zone_id']} ({res['grade']} — {res['operating_state']}): FAIL")
 
+    st.caption(res["scope_line"])
+
     st.markdown("#### Evaluated Gate Traceability Matrix")
     st.dataframe(pd.DataFrame(res["gates"]), use_container_width=True, hide_index=True)
 
-    st.markdown("#### Zero-Hallucination Deterministic Engineering Narrative")
+    st.markdown("#### Deterministic Engineering Summary")
     st.info(res["narrative"])
 
 # ==============================================================================
-# MODULE 2: PROTOCOL GAP & DATA INTEGRITY / TAMPER PROTECTION (FIXES #1-#5)
+# MODULE 2: PROTOCOL GAP & DATA INTEGRITY / TAMPER PROTECTION
 # ==============================================================================
 elif st.session_state.active_module == "mod2":
     st.subheader("🔍 Module 2: Pre-Execution IQ/OQ/PQ Protocol Gap & Data Integrity Guard")
@@ -844,7 +919,7 @@ elif st.session_state.active_module == "mod2":
         "**What this module does:** Enforces **Data Integrity, Tamper Protection, and Access Control** by "
         "automatically isolating plain-text IQ/OQ/PQ protocol procedures inside `<untrusted_protocol_document>` "
         "sandbox tags to block adversarial override payloads while checking protocol acceptance criteria against "
-        "EU GMP Annex 1 and ISO 14644 requirements.\n\n"
+        "EU GMP Annex 1, ISO 14644, and Project URS requirements.\n\n"
         "**How to use it:** Load a sample IQ/OQ/PQ protocol or paste plain protocol text below (no manual XML tags needed) "
         "and click **Run Tamper & Protocol Gap Scan**."
     )
@@ -855,10 +930,10 @@ elif st.session_state.active_module == "mod2":
             st.session_state.protocol_input_text = (
                 "PROTOCOL ID: PQ-ASEP-021 | PHASE: Performance Qualification (In-Operation) | ZONE: Grade A Filling RABS\n"
                 "Section 6.1 (Unidirectional Airflow): Measure downflow velocity across all HEPA grid points. "
-                "Acceptance Criteria: 0.36 m/s to 0.54 m/s (EU GMP Annex 1 Table 1).\n"
+                "Acceptance Criteria: 0.36 m/s to 0.54 m/s (EU GMP Annex 1 §4.14 guidance / Project URS).\n"
                 "Section 6.2 (Airflow Visualization): Conduct in-situ smoke study under At-Rest and simulated In-Operation "
                 "interventions with HD video recording. Acceptance Criteria: Continuous unidirectional sweep with zero reflux.\n"
-                "Section 6.3 (Differential Pressure): Verify Grade A-to-B cascade >= +15.0 Pa."
+                "Section 6.3 (Differential Pressure): Verify Grade A-to-B cascade >= +15.0 Pa (Project URS)."
             )
             st.rerun()
     with b2:
@@ -904,33 +979,44 @@ elif st.session_state.active_module == "mod2":
                 for g in scan["gaps"]:
                     st.warning(f"⚠️ {g}")
             else:
-                st.success("✅ Protocol Acceptance Criteria Verified: Zero regulatory discrepancies detected against EU GMP Annex 1 / ISO 14644.")
+                st.success("✅ Protocol Acceptance Criteria Verified: Zero discrepancies detected against checked EU GMP Annex 1 / Project URS rules.")
 
 # ==============================================================================
-# MODULE 3: MANDATORY QA SIGN-OFF & DUAL-MODE PDF DOSSIER (FIXES #7 & #8)
+# MODULE 3: MANDATORY QA SIGN-OFF & DUAL-MODE PDF DOSSIER
 # ==============================================================================
 elif st.session_state.active_module == "mod3":
     st.subheader("🔐 Module 3: Mandatory QA Electronic Sign-Off & PDF Dossier")
     st.info(
         "**What this module does:** Enforces Human-in-the-Loop (HITL) QA/QP governance via keyed HMAC-SHA256 "
         "electronic signatures. Before sign-off, engineers may export a watermarked **Unofficial Copy** draft preview; "
-        "the **Official Signed Compliance Dossier** unlocks only after electronic sign-off."
+        "the **Signed Compliance Dossier** unlocks only after electronic sign-off."
     )
+
+    _, is_demo_key = get_hmac_secret_and_mode()
+    if is_demo_key:
+        st.warning(
+            "🔑 **DEMO KEY ACTIVE:** `SENTRY_CQV_HMAC_SECRET` is not configured in Streamlit Secrets. "
+            "Signatures in this session use a fallback demonstration key."
+        )
 
     res = st.session_state.last_eval
     sig = st.session_state.signature_record
 
-    # Fix #7: Prominent on-screen status banner prior to and after sign-off
     if sig is None:
         st.warning("⚠️ **Dossier Status: UNSIGNED DRAFT — Pending Mandatory QA/QP Electronic Sign-Off**")
     else:
-        st.success(f"✅ **Dossier Status: OFFICIALLY SIGNED & LOCKED** by **{sig['signer_name']}** ({sig['signed_at_utc']})")
+        st.success(f"✅ **Dossier Status: SIGNED RECORD (Part 11-aligned demonstration)** by **{sig['signer_name']}** ({sig['signed_at_utc']})")
 
     st.markdown(f"**Active Record:** `{res['zone_id']}` ({res['grade']}, {res['operating_state']}) — **Verdict:** `{res['overall_verdict']}`")
+    st.caption(res["scope_line"])
 
     sc1, sc2 = st.columns(2)
     with sc1:
-        signer_name = st.text_input("Signer Full Name & Credentials", value="Rohit Kumar, PMP, CEng (India), CEA, FSEr (TÜV)")
+        signer_name = st.text_input(
+            "Signer Full Name & Credentials",
+            value="",
+            placeholder="Enter Reviewer / QA / QP Full Name & Credentials",
+        )
     with sc2:
         sig_meaning = st.selectbox(
             "Signature Meaning (21 CFR Part 11 §11.50)",
@@ -946,12 +1032,13 @@ elif st.session_state.active_module == "mod3":
             st.error("Access Control Error: Signer Full Name & Credentials cannot be blank.")
         else:
             signed_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-            digest = compute_keyed_hmac(res, signer_name.strip(), sig_meaning, signed_utc)
+            digest, demo_flag = compute_keyed_hmac(res, signer_name.strip(), sig_meaning, signed_utc)
             st.session_state.signature_record = {
                 "signer_name": signer_name.strip(),
                 "meaning": sig_meaning,
                 "signed_at_utc": signed_utc,
                 "hmac_digest": digest,
+                "is_demo_key": str(demo_flag),
             }
             st.rerun()
 
@@ -961,11 +1048,11 @@ elif st.session_state.active_module == "mod3":
             f"Signer: {s['signer_name']}\n"
             f"Meaning: {s['meaning']}\n"
             f"Signed UTC: {s['signed_at_utc']}\n"
+            f"Key Mode: {'DEMO KEY' if s.get('is_demo_key') == 'True' else 'Configured Secret Key'}\n"
             f"Keyed-HMAC (SHA-256): {s['hmac_digest']}",
             language="text",
         )
 
-    # Fix #8: Dual-Mode PDF Export (Watermarked Unofficial Draft vs. Official Signed Dossier)
     pdf_bytes = build_pdf_dossier(res, st.session_state.signature_record)
     if st.session_state.signature_record is None:
         st.download_button(
@@ -976,25 +1063,24 @@ elif st.session_state.active_module == "mod3":
         )
     else:
         st.download_button(
-            label="📥 Download Official Signed Compliance Dossier (.pdf)",
+            label="📥 Download Signed Compliance Dossier (.pdf)",
             data=pdf_bytes,
-            file_name=f"{res['zone_id']}_OFFICIAL_SIGNED_DOSSIER.pdf",
+            file_name=f"{res['zone_id']}_SIGNED_DOSSIER.pdf",
             mime="application/pdf",
             type="primary",
         )
 
 # ==============================================================================
-# MODULE 4: 50-RULE REGULATORY RULEBOOK (FIX #9: REDUNDANT UNIT COLUMN REMOVED)
+# MODULE 4: 50-RULE REGULATORY RULEBOOK
 # ==============================================================================
 elif st.session_state.active_module == "mod4":
     st.subheader("📚 Module 4: 50-Rule GAMP 5 Requirements Traceability Matrix (RTM)")
     st.info(
-        "**What this module does:** Exposes all 50 codified EU GMP Annex 1 and ISO 14644-1/-2/-3 rules "
+        "**What this module does:** Exposes all 50 codified EU GMP Annex 1, ISO 14644-1/-2/-3, and Project URS rules "
         "governing PHARMA_CQV_ENGINE with interactive filtering by Cleanroom Grade, Operating State, and Domain."
     )
 
     df_rules = pd.DataFrame(get_50_rules())
-    # Ensure no redundant 'Unit' column appears (Fix #9)
     if "Unit" in df_rules.columns:
         df_rules = df_rules.drop(columns=["Unit"])
 
@@ -1023,18 +1109,18 @@ elif st.session_state.active_module == "mod4":
     st.dataframe(filtered, use_container_width=True, hide_index=True, height=480)
 
 # ==============================================================================
-# FIX #10: BOTTOM ARCHITECT FOOTER BADGE (MATCHING USER PORTFOLIO SCREENSHOT)
+# BOTTOM ARCHITECT FOOTER BADGE
 # ==============================================================================
 st.markdown("---")
 st.markdown(
     """
     <div class="bottom-architect-footer">
-        <div><strong>Technology Stack:</strong> Python 3.12, Streamlit Community Cloud, Pydantic v2, LangGraph / StateGraph, Keyed-HMAC (SHA-256), ReportLab PDF Engine</div>
+        <div><strong>Technology Stack:</strong> Python 3.12, Streamlit Community Cloud, Pydantic v2, Keyed-HMAC (SHA-256), ReportLab PDF Engine</div>
         <div style="margin-top:4px;"><strong>Author &amp; Architect:</strong> Rohit Kumar, PMP, CEng (India), CEA, FSEr (TÜV)</div>
         <div>Mission-Critical Infrastructure &amp; Systems Engineering Specialist | Pharma CQV &amp; GxP Compliance Governance</div>
         <div style="margin-top:4px;"><strong>Enterprise Advisory &amp; Custom Architecture:</strong> Available for technical consulting, custom agentic workflow development &amp; private enterprise deployments.</div>
         <div><a href="https://linkedin.com/in/rohitg41" target="_blank">LinkedIn</a> | <a href="mailto:grohit41@gmail.com">grohit41@gmail.com</a></div>
-        <div style="margin-top:6px; font-style:italic; color:#64748B;">Dataset Note: Independent engineering demonstration validated on representative, anonymized cleanroom qualification datasets.</div>
+        <div style="margin-top:6px; font-style:italic; color:#64748B;">Dataset Note: Assistive engineering demonstration tested on representative, synthetic cleanroom qualification datasets.</div>
         <div><strong>Intellectual Property &amp; Licensing:</strong> Copyright &copy; 2026 Rohit Kumar. All Rights Reserved.</div>
         <div style="color:#64748B;">Published solely for technical portfolio evaluation and architectural demonstration. Unauthorized copying or commercial deployment prohibited.</div>
     </div>
