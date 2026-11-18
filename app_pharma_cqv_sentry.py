@@ -688,22 +688,44 @@ def build_pdf_dossier(eval_result: Dict[str, Any], signature_record: Optional[Di
     story.append(Paragraph(eval_result["narrative"], body_style))
     story.append(Spacer(1, 6))
 
+    cell_style = ParagraphStyle(
+        "CellText",
+        parent=styles["Normal"],
+        fontSize=7.8,
+        leading=9.8,
+        textColor=colors.HexColor("#1E293B"),
+    )
     gate_rows = [["Rule ID", "Verification Gate", "Measured Value", "Acceptance Limit", "Status"]]
     for g in eval_result["gates"]:
-        gate_rows.append([g["Rule ID"], g["Gate"], g["Measured"], g["Acceptance Limit"], g["Status"]])
+        gate_rows.append([
+            Paragraph(g["Rule ID"], cell_style),
+            Paragraph(g["Gate"], cell_style),
+            Paragraph(g["Measured"], cell_style),
+            Paragraph(g["Acceptance Limit"], cell_style),
+            Paragraph(f"<b>{g['Status']}</b>", cell_style),
+        ])
 
-    g_tbl = Table(gate_rows, colWidths=[28 * mm, 50 * mm, 36 * mm, 40 * mm, 24 * mm])
+    g_tbl = Table(gate_rows, colWidths=[27 * mm, 53 * mm, 34 * mm, 36 * mm, 28 * mm])
     g_tbl.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0F2744")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
         ("FONTSIZE", (0, 0), (-1, -1), 8),
         ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("PADDING", (0, 0), (-1, -1), 4),
     ]))
     story.append(g_tbl)
     story.append(Spacer(1, 10))
 
+    sig_val_style = ParagraphStyle(
+        "SigValText",
+        parent=styles["Normal"],
+        fontSize=7.8,
+        leading=9.8,
+        textColor=colors.HexColor("#1E293B"),
+        wordWrap="CJK",
+    )
     if is_signed:
         key_mode_note = (
             "DEMO KEY (Set SENTRY_CQV_HMAC_SECRET in Streamlit Secrets for deployment key)"
@@ -712,17 +734,17 @@ def build_pdf_dossier(eval_result: Dict[str, Any], signature_record: Optional[Di
         )
         sig_rows = [
             ["QA / QP Electronic Sign-Off Record", ""],
-            ["Signer Name & Credentials:", signature_record["signer_name"]],
-            ["Meaning of Signature (21 CFR 11.50):", signature_record["meaning"]],
-            ["Signed Timestamp (UTC):", signature_record["signed_at_utc"]],
-            ["Signing Key Status:", key_mode_note],
-            ["Keyed-HMAC (SHA-256) Digest:", signature_record["hmac_digest"]],
+            ["Signer Name & Credentials:", Paragraph(signature_record["signer_name"], sig_val_style)],
+            ["Meaning of Signature (21 CFR 11.50):", Paragraph(signature_record["meaning"], sig_val_style)],
+            ["Signed Timestamp (UTC):", Paragraph(signature_record["signed_at_utc"], sig_val_style)],
+            ["Signing Key Status:", Paragraph(key_mode_note, sig_val_style)],
+            ["Keyed-HMAC (SHA-256) Digest:", Paragraph(signature_record["hmac_digest"], sig_val_style)],
         ]
     else:
         sig_rows = [
             ["QA / QP Electronic Sign-Off Record", ""],
-            ["Dossier Release Status:", "UNSIGNED DRAFT — UNOFFICIAL COPY, NOT AUTHORISED FOR RELEASE"],
-            ["Required Action:", "Complete mandatory QA/QP Keyed-HMAC electronic sign-off in Module 3."],
+            ["Dossier Release Status:", Paragraph("UNSIGNED DRAFT — UNOFFICIAL COPY, NOT AUTHORISED FOR RELEASE", sig_val_style)],
+            ["Required Action:", Paragraph("Complete mandatory QA/QP Keyed-HMAC electronic sign-off in Module 3.", sig_val_style)],
         ]
 
     s_tbl = Table(sig_rows, colWidths=[58 * mm, 120 * mm])
